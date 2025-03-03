@@ -1,4 +1,8 @@
+import 'package:bank/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'theme_provider.dart';
+import 'security_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -9,10 +13,18 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
-  bool _darkMode = false;
+
+  void _logout() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Ayarlar")),
       body: Padding(
@@ -30,18 +42,31 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             SwitchListTile(
               title: const Text("Koyu Mod"),
-              value: _darkMode,
+              value: themeProvider.isDarkMode,
               onChanged: (bool value) {
-                setState(() {
-                  _darkMode = value;
-                });
+                themeProvider.toggleTheme();
               },
             ),
             ListTile(
               leading: const Icon(Icons.security),
               title: const Text("Güvenlik Ayarları"),
               trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SecuritySettingsPage()),
+                );
+              },
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: _logout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Çıkış Yap"),
             ),
           ],
         ),

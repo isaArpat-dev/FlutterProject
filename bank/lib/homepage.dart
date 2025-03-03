@@ -1,6 +1,6 @@
+import 'package:bank/registered_users_page.dart';
 import 'package:flutter/material.dart';
 import 'account_details_page.dart';
-import 'payments_page.dart';
 import 'settings_page.dart';
 import 'transfer_page.dart';
 
@@ -119,10 +119,11 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PaymentsPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const RegisteredUsersPage()),
                 );
               },
-              child: const Text("Ödeme İşlemleri"),
+              child: const Text("Kayıtlı Kullanıcı İşlemleri"),
             ),
             const SizedBox(height: 10),
             ElevatedButton(

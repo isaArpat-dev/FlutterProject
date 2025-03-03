@@ -1,5 +1,8 @@
+import 'package:bank/forgotPassword.dart';
+import 'package:bank/register.dart';
 import 'package:flutter/material.dart';
 import 'homepage.dart';
+import 'pin_login_screen.dart'; // PIN giriş ekranı
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,20 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
+  void _login() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
+  }
+
+  void _navigateToPinLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PinLoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,10 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const Text(
               'BankApp',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
             TextField(
@@ -77,19 +91,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
                   child: const Text('Şifremi Unuttum?'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
+              onPressed: _login,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),
@@ -97,8 +113,24 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text('Giriş Yap'),
             ),
             const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _navigateToPinLogin,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(fontSize: 18),
+                backgroundColor: Colors.green, // PIN butonu farklı renk
+              ),
+              child: const Text('PIN ile Giriş Yap'),
+            ),
+            const SizedBox(height: 16),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const RegisterScreen()),
+                );
+              },
               child: const Text('Hesabınız yok mu? Kayıt olun'),
             ),
           ],

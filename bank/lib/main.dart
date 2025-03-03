@@ -1,8 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart';
+import 'theme_provider.dart';
+import 'registered_users_provider.dart';
 
-void main() {
-  runApp(const BankingApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isDarkMode = prefs.getBool('isDarkMode') ?? false;
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider(isDarkMode)),
+        ChangeNotifierProvider(create: (context) => RegisteredUsersProvider()),
+      ],
+      child: const BankingApp(),
+    ),
+  );
 }
 
 class BankingApp extends StatelessWidget {
@@ -10,13 +26,16 @@ class BankingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const SplashScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: themeProvider.isDarkMode
+              ? ThemeProvider.darkTheme
+              : ThemeProvider.lightTheme,
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
