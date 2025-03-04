@@ -211,15 +211,6 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                 }
               },
             ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: _logout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text("Çıkış Yap"),
-            ),
           ],
         ),
       ),

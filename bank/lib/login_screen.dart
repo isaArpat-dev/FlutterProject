@@ -1,8 +1,10 @@
-import 'package:bank/forgotPassword.dart';
-import 'package:bank/register.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'auth.dart';
 import 'homepage.dart';
-import 'pin_login_screen.dart'; // PIN giriş ekranı
+import 'pin_login_screen.dart';
+import 'forgotPassword.dart';
+import 'register.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,12 +18,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  void _login() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    String? error = await authProvider.signIn(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
     );
+
+    if (error != null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = error;
+      });
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    }
   }
 
   void _navigateToPinLogin() {
@@ -50,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'E-posta veya Telefon',
+                labelText: 'E-posta',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -104,21 +126,32 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _login,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              child: const Text('Giriş Yap'),
-            ),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                    child: const Text('Giriş Yap'),
+                  ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _navigateToPinLogin,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),
-                backgroundColor: Colors.green, // PIN butonu farklı renk
+                backgroundColor: Colors.green,
               ),
               child: const Text('PIN ile Giriş Yap'),
             ),

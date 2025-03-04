@@ -1,6 +1,7 @@
 import 'package:bank/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'theme_provider.dart';
 import 'security_settings_page.dart';
 
@@ -13,6 +14,24 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
+    });
+  }
+
+  Future<void> _savePreferences(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notificationsEnabled', value);
+  }
 
   void _logout() {
     Navigator.pushReplacement(
@@ -38,6 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _notificationsEnabled = value;
                 });
+                _savePreferences(value);
               },
             ),
             SwitchListTile(

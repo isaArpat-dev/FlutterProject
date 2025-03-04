@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'registered_users_provider.dart';
+import 'utils.dart'; // getCategoryIcon fonksiyonu için
 
 class RegisteredUsersPage extends StatelessWidget {
   const RegisteredUsersPage({super.key});
@@ -94,16 +95,51 @@ class RegisteredUsersPage extends StatelessWidget {
 
   void _showTransferDialog(BuildContext context, String name, String iban) {
     final amountController = TextEditingController();
+    String selectedCategory = "Fatura Ödemesi"; // Varsayılan kategori
+    List<String> categories = [
+      "Fatura Ödemesi",
+      "Online Alışveriş",
+      "Market Alışverişi",
+      "Kira Ödemesi",
+      "Diğer"
+    ];
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text("$name Kişisine Para Gönder"),
-          content: TextField(
-            controller: amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: "Tutar"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Tutar"),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                items: categories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Row(
+                      children: [
+                        Icon(getCategoryIcon(category), color: Colors.blue),
+                        const SizedBox(width: 10),
+                        Text(category),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedCategory = value;
+                  }
+                },
+                decoration: const InputDecoration(labelText: "Ödeme Türü"),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -113,7 +149,10 @@ class RegisteredUsersPage extends StatelessWidget {
               onPressed: () {
                 if (amountController.text.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("$name kişisine para gönderildi")),
+                    SnackBar(
+                      content: Text(
+                          "$name kişisine ₺${amountController.text} gönderildi (${selectedCategory})"),
+                    ),
                   );
                   Navigator.pop(context);
                 }
