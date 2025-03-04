@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'auth.dart';
 import 'login_screen.dart';
 import 'firestore.dart';
+import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -52,9 +54,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final firestoreService =
             Provider.of<FirestoreService>(context, listen: false);
         try {
+          final iban = await generateUniqueIban(); // Benzersiz IBAN oluşturma
+          final cardNumber = generateCardNumber(); // Kart numarası oluşturma
+          final expiryDate =
+              generateExpiryDate(); // Son kullanma tarihi oluşturma
           await firestoreService.saveUser(authProvider.user!.uid, {
             'name': _nameController.text.trim(),
             'email': _emailController.text.trim(),
+            'balance': 15000.0, // Başlangıç bakiyesi
+            'lastTransaction': null, // Başlangıçta son işlem yok
+            'iban': iban, // Oluşturulan IBAN
+            'cardNumber': cardNumber, // Oluşturulan kart numarası
+            'expiryDate': expiryDate, // Oluşturulan son kullanma tarihi
           });
 
           Navigator.pushReplacement(
@@ -75,6 +86,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _errorMessage = "Kayıt sırasında bir hata oluştu: ${e.toString()}";
       });
     }
+  }
+
+  Future<String> generateUniqueIban() async {
+    final random = Random();
+    String iban = '';
+    bool isUnique = false;
+
+    while (!isUnique) {
+      final uniqueNumber =
+          random.nextInt(999999999); // 0 ile 999999999 arasında rastgele sayı
+      iban = 'TR' + uniqueNumber.toString().padLeft(24, '0');
+
+      // Firestore'da IBAN'ın benzersiz olup olmadığını kontrol et
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('iban', isEqualTo: iban)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        isUnique = true;
+      }
+    }
+
+    return iban;
+  }
+
+  String generateCardNumber() {
+    // Kart numarasının son 2 rakamını rastgele oluşturma
+    final random = Random();
+    final lastTwoDigits =
+        random.nextInt(90) + 10; // 10 ile 99 arasında rastgele sayı
+    return '**** **** **** $lastTwoDigits';
+  }
+
+  String generateExpiryDate() {
+    // Son kullanma tarihini belirleme (bulunduğumuz yılın 6 yıl ilerisinin 12. ayı)
+    final now = DateTime.now();
+    final expiryYear = now.year + 6;
+    return '12/$expiryYear';
   }
 
   @override

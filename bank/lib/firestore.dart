@@ -13,68 +13,13 @@ class FirestoreService {
     return await _db.collection('users').doc(userId).get();
   }
 
-  // Kullanıcı bilgilerini güncelleme
-  Future<void> updateUser(String userId, Map<String, dynamic> userData) async {
-    await _db.collection('users').doc(userId).update(userData);
+  // Kullanıcı bilgilerini dinleme
+  Stream<DocumentSnapshot> getUserStream(String userId) {
+    return _db.collection('users').doc(userId).snapshots();
   }
 
-  // Kullanıcı bilgilerini silme
-  Future<void> deleteUser(String userId) async {
-    await _db.collection('users').doc(userId).delete();
-  }
-
-  // Diğer kişi isimleri ve IBAN'ları kaydetme
-  Future<void> saveContact(
-      String userId, Map<String, dynamic> contactData) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('contacts')
-        .add(contactData);
-  }
-
-  // Diğer kişi isimleri ve IBAN'ları okuma
-  Future<QuerySnapshot> getContacts(String userId) async {
-    return await _db
-        .collection('users')
-        .doc(userId)
-        .collection('contacts')
-        .get();
-  }
-
-  // Diğer kişi isimleri ve IBAN'ları güncelleme
-  Future<void> updateContact(
-      String userId, String contactId, Map<String, dynamic> contactData) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('contacts')
-        .doc(contactId)
-        .update(contactData);
-  }
-
-  // Diğer kişi isimleri ve IBAN'ları silme
-  Future<void> deleteContact(String userId, String contactId) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('contacts')
-        .doc(contactId)
-        .delete();
-  }
-
-  // Hesap hareketlerini kaydetme
-  Future<void> saveTransaction(
-      String userId, Map<String, dynamic> transactionData) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .add(transactionData);
-  }
-
-  // Hesap hareketlerini okuma
-  Future<QuerySnapshot> getTransactions(String userId) async {
+  // Kullanıcı işlemlerini getirme
+  Future<QuerySnapshot> getUserTransactions(String userId) async {
     return await _db
         .collection('users')
         .doc(userId)
@@ -82,24 +27,64 @@ class FirestoreService {
         .get();
   }
 
-  // Hesap hareketlerini güncelleme
-  Future<void> updateTransaction(String userId, String transactionId,
-      Map<String, dynamic> transactionData) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .doc(transactionId)
-        .update(transactionData);
-  }
+  // Para transferi işlemi
+  Future<void> transferMoney(String senderId, String receiverIban,
+      double amount, String category) async {
+    final senderRef = _db.collection('users').doc(senderId);
 
-  // Hesap hareketlerini silme
-  Future<void> deleteTransaction(String userId, String transactionId) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .doc(transactionId)
-        .delete();
+    await _db.runTransaction((transaction) async {
+      final senderSnapshot = await transaction.get(senderRef);
+
+      if (!senderSnapshot.exists) {
+        throw Exception("Gönderen kullanıcı bulunamadı");
+      }
+
+      final senderBalance = senderSnapshot['balance'] as double;
+
+      if (senderBalance < amount) {
+        throw Exception("Yetersiz bakiye");
+      }
+
+      // Gönderen kullanıcının bakiyesini güncelle
+      transaction.update(senderRef, {'balance': senderBalance - amount});
+
+      // Gönderen kullanıcının işlem geçmişine ekle
+      transaction.set(senderRef.collection('transactions').doc(), {
+        'amount': -amount,
+        'timestamp': FieldValue.serverTimestamp(),
+        'type': 'transfer',
+        'category': category,
+        'to': receiverIban,
+      });
+
+      // Gönderen kullanıcının son işlemini güncelle
+      transaction.update(senderRef, {'lastTransaction': '₺$amount gönderildi'});
+
+      // Alıcı kullanıcının IBAN'ına göre kullanıcıyı bul ve bakiyesini güncelle
+      final receiverSnapshot = await _db
+          .collection('users')
+          .where('iban', isEqualTo: receiverIban)
+          .get();
+      if (receiverSnapshot.docs.isNotEmpty) {
+        final receiverRef = receiverSnapshot.docs.first.reference;
+        final receiverBalance =
+            receiverSnapshot.docs.first['balance'] as double;
+        transaction.update(receiverRef, {'balance': receiverBalance + amount});
+
+        // Alıcı kullanıcının işlem geçmişine ekle
+        transaction.set(receiverRef.collection('transactions').doc(), {
+          'amount': amount,
+          'timestamp': FieldValue.serverTimestamp(),
+          'type': 'transfer',
+          'category': category,
+          'from': senderId,
+        });
+
+        // Alıcı kullanıcının son işlemini güncelle
+        transaction.update(receiverRef, {'lastTransaction': '₺$amount alındı'});
+      } else {
+        throw Exception("Alıcı IBAN bulunamadı");
+      }
+    });
   }
 }

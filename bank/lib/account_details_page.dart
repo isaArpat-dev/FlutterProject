@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:provider/provider.dart';
+import 'auth.dart';
+import 'firestore.dart';
 import 'utils.dart'; // getCategoryIcon fonksiyonunu buraya ekledik.
 
 class AccountDetailsPage extends StatefulWidget {
@@ -17,133 +19,160 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final firestoreService = Provider.of<FirestoreService>(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Hesap Detayları")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Center(
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 6,
-                color: isCardActive ? Colors.greenAccent[400] : Colors.grey,
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        cardName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+        child: FutureBuilder<DocumentSnapshot>(
+          future: firestoreService.getUser(authProvider.user!.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return const Center(child: Text('Bir hata oluştu'));
+            }
+
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Center(child: Text('Kullanıcı verisi bulunamadı'));
+            }
+
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final cardNumber = userData['cardNumber'] ?? '**** **** **** 1234';
+            final expiryDate = userData['expiryDate'] ?? '12/26';
+
+            return Column(
+              children: [
+                Center(
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 6,
+                    color: isCardActive ? Colors.greenAccent[400] : Colors.grey,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            cardName,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          Text(
+                            "Kart No: $cardNumber",
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.white),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Son Kullanma Tarihi: $expiryDate",
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.white),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Limit: ₺${cardLimit.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.white),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 15),
-                      const Text(
-                        "Kart No: **** **** **** 1234",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "Son Kullanma Tarihi: 12/26",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Limit: ₺${cardLimit.toStringAsFixed(2)}",
-                        style:
-                            const TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Hesap Hareketleri",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance
-                    .collection('transactions')
-                    .snapshots(),
-                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text("Henüz işlem bulunmamaktadır."));
-                  }
+                const SizedBox(height: 30),
+                const Text(
+                  "Hesap Hareketleri",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 15),
+                Expanded(
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: firestoreService
+                        .getUserTransactions(authProvider.user!.uid),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(
+                            child: Text("Henüz işlem bulunmamaktadır."));
+                      }
 
-                  return ListView(
-                    children: snapshot.data!.docs.map((doc) {
-                      String category = doc['category'];
-                      double amount = doc['amount'];
+                      return ListView(
+                        children: snapshot.data!.docs.map((doc) {
+                          String category = doc['category'];
+                          double amount = doc['amount'];
 
-                      return ListTile(
-                        leading: Icon(getCategoryIcon(category),
-                            size: 32, color: Colors.blue),
-                        title: Text(category,
-                            style: const TextStyle(fontSize: 18)),
-                        subtitle: Text("₺${amount.toStringAsFixed(2)}",
-                            style: const TextStyle(fontSize: 16)),
+                          return ListTile(
+                            leading: Icon(getCategoryIcon(category),
+                                size: 32, color: Colors.blue),
+                            title: Text(category,
+                                style: const TextStyle(fontSize: 18)),
+                            subtitle: Text("₺${amount.toStringAsFixed(2)}",
+                                style: const TextStyle(fontSize: 16)),
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => _showCardSettingsDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    },
                   ),
                 ),
-                child: const Text(
-                  "Kart Ayarları",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isCardActive = !isCardActive;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isCardActive ? Colors.redAccent : Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => _showCardSettingsDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      "Kart Ayarları",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                   ),
                 ),
-                child: Text(
-                  isCardActive ? "Kartı Devre Dışı Bırak" : "Kartı Etkinleştir",
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        isCardActive = !isCardActive;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isCardActive ? Colors.redAccent : Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isCardActive
+                          ? "Kartı Devre Dışı Bırak"
+                          : "Kartı Etkinleştir",
+                      style: const TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

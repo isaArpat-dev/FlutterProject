@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'auth.dart';
+import 'firestore.dart';
 
 class TransferPage extends StatefulWidget {
-  const TransferPage({super.key});
+  final String? initialIban;
+
+  const TransferPage({super.key, this.initialIban});
 
   @override
   _TransferPageState createState() => _TransferPageState();
@@ -20,14 +25,66 @@ class _TransferPageState extends State<TransferPage> {
     'Diğer'
   ];
 
-  void _sendMoney() {
-    String iban = _ibanController.text;
-    String amount = _amountController.text;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialIban != null) {
+      _ibanController.text = widget.initialIban!;
+    }
+  }
 
-    if (iban.isNotEmpty && amount.isNotEmpty) {
-      // Burada işlem detaylarını kaydedebiliriz
-      print(
-          '$_selectedCategory kategorisinde $amount TL, IBAN: $iban adresine gönderildi.');
+  void _sendMoney() async {
+    String iban = _ibanController.text;
+    double amount = double.tryParse(_amountController.text) ?? 0.0;
+
+    if (iban.isNotEmpty && amount > 0) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final firestoreService =
+          Provider.of<FirestoreService>(context, listen: false);
+
+      try {
+        // Gönderen kullanıcının IBAN'ını al
+        final senderSnapshot =
+            await firestoreService.getUser(authProvider.user!.uid);
+        final senderIban = senderSnapshot['iban'];
+
+        // Gönderen ve alıcı IBAN'ları aynıysa işlemi gerçekleştirme
+        if (iban == senderIban) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Kendinize para gönderemezsiniz.')),
+          );
+          return;
+        }
+
+        // Para transferi işlemi
+        await firestoreService.transferMoney(
+          authProvider.user!.uid,
+          iban,
+          amount,
+          _selectedCategory,
+        );
+
+        // İşlem başarılı olduğunda kullanıcıya bildirim göster
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  '$_selectedCategory kategorisinde $amount TL, IBAN: $iban adresine gönderildi.')),
+        );
+
+        // Formu temizle
+        _ibanController.clear();
+        _amountController.clear();
+        setState(() {
+          _selectedCategory = 'Bireysel Ödeme';
+        });
+      } catch (e) {
+        // Hata durumunda kullanıcıya bildirim göster
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Para transferi sırasında bir hata oluştu: ${e.toString()}')),
+        );
+      }
     }
   }
 
