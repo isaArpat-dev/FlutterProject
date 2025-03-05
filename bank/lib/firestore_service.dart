@@ -3,6 +3,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  // Kayıtlı kullanıcı ekleme
+  Future<void> addUser(String userId, String name, String iban) async {
+    await _db.collection('users').doc(userId).collection('contacts').add({
+      "name": name,
+      "iban": iban,
+    });
+  }
+
+  // Kayıtlı kullanıcı silme
+  Future<void> removeUser(String userId, String docId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('contacts')
+        .doc(docId)
+        .delete();
+  }
+
   // Kullanıcı bilgilerini kaydetme
   Future<void> saveUser(String userId, Map<String, dynamic> userData) async {
     await _db.collection('users').doc(userId).set(userData);
@@ -86,5 +104,18 @@ class FirestoreService {
         throw Exception("Alıcı IBAN bulunamadı");
       }
     });
+  }
+
+  // Kayıtlı kullanıcıları getirme
+  Future<List<Map<String, dynamic>>> fetchRegisteredUsers(String userId) async {
+    final snapshot =
+        await _db.collection('users').doc(userId).collection('contacts').get();
+    return snapshot.docs
+        .map((doc) => {
+              "docId": doc.id,
+              "name": doc['name'],
+              "iban": doc['iban'],
+            })
+        .toList();
   }
 }

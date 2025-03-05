@@ -5,9 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'splash_screen.dart';
 import 'theme_provider.dart';
-import 'registered_users_provider.dart';
-import 'auth.dart';
-import 'firestore.dart'; // Firestore Service import
+import 'auth_service.dart';
+import 'firestore_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,9 +27,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider(isDarkMode)),
-        ChangeNotifierProvider(create: (context) => RegisteredUsersProvider()),
         ChangeNotifierProvider(
-            create: (context) => AuthProvider()), // Firebase Auth
+            create: (context) => AuthService()), // Firebase Auth
         Provider(create: (context) => FirestoreService()), // Firestore Service
       ],
       child: const BankingApp(),

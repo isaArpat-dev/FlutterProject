@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
-import 'firestore.dart';
+import 'auth_service.dart';
+import 'firestore_service.dart';
 
 class TransferPage extends StatefulWidget {
   final String? initialIban;
@@ -38,14 +38,14 @@ class _TransferPageState extends State<TransferPage> {
     double amount = double.tryParse(_amountController.text) ?? 0.0;
 
     if (iban.isNotEmpty && amount > 0) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
       final firestoreService =
           Provider.of<FirestoreService>(context, listen: false);
 
       try {
         // Gönderen kullanıcının IBAN'ını al
         final senderSnapshot =
-            await firestoreService.getUser(authProvider.user!.uid);
+            await firestoreService.getUser(authService.user!.uid);
         final senderIban = senderSnapshot['iban'];
 
         // Gönderen ve alıcı IBAN'ları aynıysa işlemi gerçekleştirme
@@ -58,7 +58,7 @@ class _TransferPageState extends State<TransferPage> {
 
         // Para transferi işlemi
         await firestoreService.transferMoney(
-          authProvider.user!.uid,
+          authService.user!.uid,
           iban,
           amount,
           _selectedCategory,

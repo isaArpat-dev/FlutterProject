@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'auth_service.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -8,8 +11,7 @@ class SecuritySettingsPage extends StatefulWidget {
 }
 
 class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
-  bool _pinCodeEnabled = false;
-  String? _savedPin;
+  bool _is2FAEnabled = false;
 
   void _changePassword() {
     TextEditingController passwordController = TextEditingController();
@@ -53,7 +55,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                   child: const Text("İptal"),
                 ),
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (passwordController.text.isEmpty ||
                         confirmPasswordController.text.isEmpty) {
                       setDialogState(() {
@@ -70,110 +72,29 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                       return;
                     }
 
-                    // Buraya şifre değiştirme işlemi eklenecek
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Şifre başarıyla değiştirildi!")),
-                    );
-                  },
-                  child: const Text("Kaydet"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _setPinCode() {
-    TextEditingController pinController = TextEditingController();
-    String? errorMessage;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("PIN Kodu Belirle"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: pinController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: "4 Haneli PIN"),
-                  ),
-                  if (errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("İptal"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (pinController.text.length != 4) {
+                    try {
+                      User? user = FirebaseAuth.instance.currentUser;
+                      if (user != null) {
+                        await user
+                            .updatePassword(passwordController.text.trim());
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Şifre başarıyla değiştirildi!")),
+                        );
+                      }
+                    } catch (e) {
                       setDialogState(() {
-                        errorMessage = "PIN 4 haneli olmalıdır.";
+                        errorMessage =
+                            "Şifre değiştirme işlemi sırasında bir hata oluştu: ${e.toString()}";
                       });
-                      return;
                     }
-
-                    setState(() {
-                      _savedPin = pinController.text;
-                      _pinCodeEnabled = true;
-                    });
-
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("PIN başarıyla ayarlandı!")),
-                    );
                   },
                   child: const Text("Kaydet"),
                 ),
               ],
             );
           },
-        );
-      },
-    );
-  }
-
-  void _logout() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Çıkış Yap"),
-          content: const Text("Hesabınızdan çıkış yapmak istiyor musunuz?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("İptal"),
-            ),
-            TextButton(
-              onPressed: () {
-                // Buraya çıkış işlemi eklenecek
-                Navigator.pop(context);
-                Navigator.pop(context); // Settings sayfasına geri dön
-              },
-              child: const Text("Çıkış Yap"),
-            ),
-          ],
         );
       },
     );
@@ -192,24 +113,6 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               title: const Text("Şifre Değiştir"),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: _changePassword,
-            ),
-            SwitchListTile(
-              title: const Text("PIN Kodu Kullan"),
-              subtitle: const Text("Hızlı giriş için PIN belirleyin"),
-              value: _pinCodeEnabled,
-              onChanged: (bool value) {
-                if (value) {
-                  _setPinCode();
-                } else {
-                  setState(() {
-                    _pinCodeEnabled = false;
-                    _savedPin = null;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("PIN kaldırıldı.")),
-                  );
-                }
-              },
             ),
           ],
         ),

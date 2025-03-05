@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
-import 'registered_users_provider.dart';
+import 'auth_service.dart';
+import 'firestore_service.dart';
 import 'transfer_page.dart';
 
 class RegisteredUsersPage extends StatefulWidget {
@@ -14,14 +14,15 @@ class RegisteredUsersPage extends StatefulWidget {
 class _RegisteredUsersPageState extends State<RegisteredUsersPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ibanController = TextEditingController();
+  List<Map<String, dynamic>> _registeredUsers = [];
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final registeredUsersProvider =
-        Provider.of<RegisteredUsersProvider>(context, listen: false);
-    registeredUsersProvider.fetchRegisteredUsers(authProvider.user!.uid);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final firestoreService =
+        Provider.of<FirestoreService>(context, listen: false);
+    _fetchRegisteredUsers(authService.user!.uid, firestoreService);
 
     // Dinleyiciler ekleyerek butonun aktif/pasif olmasını sağlayalım
     _nameController.addListener(_updateButtonState);
@@ -30,6 +31,14 @@ class _RegisteredUsersPageState extends State<RegisteredUsersPage> {
 
   void _updateButtonState() {
     setState(() {});
+  }
+
+  Future<void> _fetchRegisteredUsers(
+      String userId, FirestoreService firestoreService) async {
+    final users = await firestoreService.fetchRegisteredUsers(userId);
+    setState(() {
+      _registeredUsers = users;
+    });
   }
 
   @override
@@ -43,9 +52,8 @@ class _RegisteredUsersPageState extends State<RegisteredUsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final registeredUsersProvider =
-        Provider.of<RegisteredUsersProvider>(context);
+    final authService = Provider.of<AuthService>(context);
+    final firestoreService = Provider.of<FirestoreService>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,32 +84,35 @@ class _RegisteredUsersPageState extends State<RegisteredUsersPage> {
                       _ibanController.text.trim().isEmpty
                   ? null
                   : () async {
-                      await registeredUsersProvider.addUser(
-                        authProvider.user!.uid,
+                      await firestoreService.addUser(
+                        authService.user!.uid,
                         _nameController.text.trim(),
                         _ibanController.text.trim(),
                       );
                       _nameController.clear();
                       _ibanController.clear();
-                      setState(
-                          () {}); // Butonun tekrar aktif olmasını sağlamak için
+                      _fetchRegisteredUsers(
+                          authService.user!.uid, firestoreService);
                     },
               child: const Text('Kullanıcı Ekle'),
             ),
             const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
-                itemCount: registeredUsersProvider.registeredUsers.length,
+                itemCount: _registeredUsers.length,
                 itemBuilder: (context, index) {
-                  final user = registeredUsersProvider.registeredUsers[index];
+                  final user = _registeredUsers[index];
                   return ListTile(
                     title: Text(user['name']!),
                     subtitle: Text(user['iban']!),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () async {
-                        await registeredUsersProvider.removeUser(
-                            authProvider.user!.uid, index);
+                        await firestoreService.removeUser(
+                            authService.user!.uid, user['docId']!);
+                        setState(() {
+                          _registeredUsers.removeAt(index);
+                        });
                       },
                     ),
                     onTap: () {

@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'account_details_page.dart';
-import 'auth.dart';
-import 'firestore.dart';
+import 'auth_service.dart';
+import 'firestore_service.dart';
 import 'registered_users_page.dart';
 import 'settings_page.dart';
 import 'transfer_page.dart';
@@ -13,11 +13,11 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authService = Provider.of<AuthService>(context);
     final firestoreService = Provider.of<FirestoreService>(context);
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: firestoreService.getUserStream(authProvider.user!.uid),
+      stream: firestoreService.getUserStream(authService.user!.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

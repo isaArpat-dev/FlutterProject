@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
+import 'auth_service.dart';
 import 'login_screen.dart';
-import 'firestore.dart';
+import 'firestore_service.dart';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -38,8 +38,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      String? error = await authProvider.signUp(
+      final authService = Provider.of<AuthService>(context, listen: false);
+      String? error = await authService.signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
@@ -58,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           final cardNumber = generateCardNumber(); // Kart numarası oluşturma
           final expiryDate =
               generateExpiryDate(); // Son kullanma tarihi oluşturma
-          await firestoreService.saveUser(authProvider.user!.uid, {
+          await firestoreService.saveUser(authService.user!.uid, {
             'name': _nameController.text.trim(),
             'email': _emailController.text.trim(),
             'balance': 15000.0, // Başlangıç bakiyesi

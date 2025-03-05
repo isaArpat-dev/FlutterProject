@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
+import 'auth_service.dart';
 import 'homepage.dart';
-import 'pin_login_screen.dart';
 import 'forgotPassword.dart';
 import 'register.dart';
 
@@ -27,8 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    String? error = await authProvider.signIn(
+    final authService = Provider.of<AuthService>(context, listen: false);
+    String? error = await authService.signIn(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
@@ -44,13 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     }
-  }
-
-  void _navigateToPinLogin() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const PinLoginScreen()),
-    );
   }
 
   @override
@@ -145,16 +137,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: const Text('Giriş Yap'),
                   ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _navigateToPinLogin,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18),
-                backgroundColor: Colors.green,
-              ),
-              child: const Text('PIN ile Giriş Yap'),
-            ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
-import 'firestore.dart';
+import 'auth_service.dart';
+import 'firestore_service.dart';
 import 'utils.dart'; // getCategoryIcon fonksiyonunu buraya ekledik.
 
 class AccountDetailsPage extends StatefulWidget {
@@ -19,7 +19,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authService = Provider.of<AuthService>(context);
     final firestoreService = Provider.of<FirestoreService>(context);
 
     return Scaffold(
@@ -27,7 +27,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FutureBuilder<DocumentSnapshot>(
-          future: firestoreService.getUser(authProvider.user!.uid),
+          future: firestoreService.getUser(authService.user!.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -99,7 +99,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
                 Expanded(
                   child: FutureBuilder<QuerySnapshot>(
                     future: firestoreService
-                        .getUserTransactions(authProvider.user!.uid),
+                        .getUserTransactions(authService.user!.uid),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
