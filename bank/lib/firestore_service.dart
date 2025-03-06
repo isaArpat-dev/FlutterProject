@@ -118,4 +118,14 @@ class FirestoreService {
             })
         .toList();
   }
+
+  // Kart bilgilerini güncelleme
+  Future<void> updateCardInfo(String userId, String cardName,
+      double transferLimit, bool isCardActive) async {
+    await _db.collection('users').doc(userId).update({
+      'cardName': cardName,
+      'transferLimit': transferLimit,
+      'isCardActive': isCardActive,
+    });
+  }
 }

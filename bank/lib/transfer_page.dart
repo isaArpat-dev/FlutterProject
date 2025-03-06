@@ -43,15 +43,36 @@ class _TransferPageState extends State<TransferPage> {
           Provider.of<FirestoreService>(context, listen: false);
 
       try {
-        // Gönderen kullanıcının IBAN'ını al
+        // Gönderen kullanıcının bilgilerini al
         final senderSnapshot =
             await firestoreService.getUser(authService.user!.uid);
         final senderIban = senderSnapshot['iban'];
+        final transferLimit = senderSnapshot['transferLimit'] ?? 0.0;
+        final isCardActive = senderSnapshot['isCardActive'] ?? true;
+
+        // Kart devre dışıysa işlemi gerçekleştirme
+        if (!isCardActive) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Kartınız devre dışı, işlem yapılamaz.')),
+          );
+          return;
+        }
 
         // Gönderen ve alıcı IBAN'ları aynıysa işlemi gerçekleştirme
         if (iban == senderIban) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Kendinize para gönderemezsiniz.')),
+          );
+          return;
+        }
+
+        // Gönderilecek tutar transfer limitinden fazlaysa işlemi gerçekleştirme
+        if (amount > transferLimit) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Gönderilecek tutar transfer limitinden fazla olamaz.')),
           );
           return;
         }

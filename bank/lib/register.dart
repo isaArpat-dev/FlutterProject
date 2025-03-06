@@ -66,6 +66,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'iban': iban, // Oluşturulan IBAN
             'cardNumber': cardNumber, // Oluşturulan kart numarası
             'expiryDate': expiryDate, // Oluşturulan son kullanma tarihi
+            'cardName': 'Kartım', // Varsayılan kart ismi
+            'transferLimit': 5000.0, // Varsayılan transfer limiti
+            'isCardActive': true, // Kart başlangıçta aktif
           });
 
           Navigator.pushReplacement(

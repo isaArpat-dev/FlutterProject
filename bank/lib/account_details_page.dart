@@ -15,7 +15,7 @@ class AccountDetailsPage extends StatefulWidget {
 class _AccountDetailsPageState extends State<AccountDetailsPage> {
   bool isCardActive = true;
   String cardName = "Kartım";
-  double cardLimit = 5000.00;
+  double transferLimit = 5000.00;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +44,9 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
             final userData = snapshot.data!.data() as Map<String, dynamic>;
             final cardNumber = userData['cardNumber'] ?? '**** **** **** 1234';
             final expiryDate = userData['expiryDate'] ?? '12/26';
+            cardName = userData['cardName'] ?? cardName;
+            transferLimit = userData['transferLimit'] ?? transferLimit;
+            isCardActive = userData['isCardActive'] ?? isCardActive;
 
             return Column(
               children: [
@@ -81,7 +84,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            "Limit: ₺${cardLimit.toStringAsFixed(2)}",
+                            "Limit: ₺${transferLimit.toStringAsFixed(2)}",
                             style: const TextStyle(
                                 fontSize: 18, color: Colors.white),
                           ),
@@ -150,10 +153,22 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       setState(() {
                         isCardActive = !isCardActive;
                       });
+
+                      final authService =
+                          Provider.of<AuthService>(context, listen: false);
+                      final firestoreService =
+                          Provider.of<FirestoreService>(context, listen: false);
+
+                      await firestoreService.updateCardInfo(
+                        authService.user!.uid,
+                        cardName,
+                        transferLimit,
+                        isCardActive,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
@@ -180,7 +195,8 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
 
   void _showCardSettingsDialog(BuildContext context) {
     final nameController = TextEditingController(text: cardName);
-    final limitController = TextEditingController(text: cardLimit.toString());
+    final limitController =
+        TextEditingController(text: transferLimit.toString());
     showDialog(
       context: context,
       builder: (context) {
@@ -196,7 +212,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
               TextField(
                 controller: limitController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Kart Limiti"),
+                decoration: const InputDecoration(labelText: "Transfer Limiti"),
               ),
             ],
           ),
@@ -205,12 +221,25 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
                 onPressed: () => Navigator.pop(context),
                 child: const Text("İptal")),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                final authService =
+                    Provider.of<AuthService>(context, listen: false);
+                final firestoreService =
+                    Provider.of<FirestoreService>(context, listen: false);
+
                 setState(() {
                   cardName = nameController.text;
-                  cardLimit =
-                      double.tryParse(limitController.text) ?? cardLimit;
+                  transferLimit =
+                      double.tryParse(limitController.text) ?? transferLimit;
                 });
+
+                await firestoreService.updateCardInfo(
+                  authService.user!.uid,
+                  cardName,
+                  transferLimit,
+                  isCardActive,
+                );
+
                 Navigator.pop(context);
               },
               child: const Text("Kaydet"),

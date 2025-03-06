@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'auth_service.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -11,8 +9,6 @@ class SecuritySettingsPage extends StatefulWidget {
 }
 
 class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
-  bool _is2FAEnabled = false;
-
   void _changePassword() {
     TextEditingController passwordController = TextEditingController();
     TextEditingController confirmPasswordController = TextEditingController();
