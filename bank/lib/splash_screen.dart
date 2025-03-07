@@ -45,11 +45,11 @@ class _SplashScreenState extends State<SplashScreen>
       body: Center(
         child: ScaleTransition(
           scale: _logoAnimation,
-          child: Column(
+          child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.account_balance, size: 100, color: Colors.white),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               CircularProgressIndicator(color: Colors.white),
             ],
           ),

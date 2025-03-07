@@ -99,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     while (!isUnique) {
       final uniqueNumber =
           random.nextInt(999999999); // 0 ile 999999999 arasında rastgele sayı
-      iban = 'TR' + uniqueNumber.toString().padLeft(24, '0');
+      iban = 'TR${uniqueNumber.toString().padLeft(24, '0')}';
 
       // Firestore'da IBAN'ın benzersiz olup olmadığını kontrol et
       final snapshot = await FirebaseFirestore.instance
